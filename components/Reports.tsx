@@ -4,16 +4,25 @@ import { Coffee, ShoppingBag, Utensils, Car, HeartPulse, Gamepad2, Briefcase, Pa
 import { Account, Transaction } from '../types';
 
 interface ReportsProps {
-  account: Account;
+  account: Account | null;
   transactions: Transaction[];
+  onEdit: (transaction: Transaction) => void;
 }
 
-const Reports: React.FC<ReportsProps> = ({ account, transactions }) => {
+const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
   // Aggregate expenses by category
   const expensesByCategory = transactions.reduce((acc, tx) => {
     acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
     return acc;
   }, {} as Record<string, number>);
+
+  if (!account) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full bg-[#121212] p-10 text-center">
+        <p className="text-gray-500 italic">Cadastre uma conta para visualizar os relatórios.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-full bg-[#121212]">
@@ -25,51 +34,64 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions }) => {
       <div className="p-4 space-y-6">
         {/* Account Selection */}
         <section>
-          <p className="text-gray-400 text-xs font-semibold mb-3">Selecione uma Conta</p>
-          <div className="inline-flex items-center bg-[#0a84a5] bg-opacity-80 px-4 py-2 rounded-full text-xs font-medium text-white shadow-sm">
-            {account.name}
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3">Selecione uma Conta</p>
+          <div className="inline-flex items-center bg-[#0a84a5] px-5 py-2.5 rounded-full text-xs font-bold text-white shadow-lg border border-[#ffffff20]">
+            {account.bank}
           </div>
         </section>
 
         {/* Account Info Card */}
-        <div className="flex items-center gap-4 bg-[#121212] p-2">
-           <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center border border-gray-700">
+        <div className="flex items-center gap-4 bg-[#1c1c1e] p-4 rounded-2xl border border-gray-800">
+           <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-700">
               <span className="text-xl">🏛️</span>
            </div>
            <div>
-              <p className="text-white font-bold text-sm leading-tight">{account.name}</p>
-              <p className="text-gray-500 text-[10px]">{account.bank} · 123</p>
+              <p className="text-white font-black text-sm leading-tight tracking-tight">{account.bank}</p>
+              <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-1">Status: Ativo</p>
            </div>
         </div>
 
         {/* Metric Cards Row */}
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-          <div className="flex-shrink-0 w-32 h-20 bg-white rounded-xl shadow-md"></div>
-          <div className="flex-shrink-0 w-32 h-20 bg-white rounded-xl shadow-md"></div>
-          <div className="flex-shrink-0 w-32 h-20 bg-white rounded-xl shadow-md"></div>
+          <div className="flex-shrink-0 w-36 h-24 bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-4">
+             <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Total Gastos</span>
+             <span className="text-black font-black text-lg">R$ {account.expenses.toFixed(2)}</span>
+          </div>
+          <div className="flex-shrink-0 w-36 h-24 bg-[#0a84a5] rounded-2xl shadow-xl flex flex-col items-center justify-center p-4">
+             <span className="text-white text-opacity-60 text-[9px] font-black uppercase tracking-widest mb-1">Saldo Livre</span>
+             <span className="text-white font-black text-lg">R$ {account.currentBalance.toFixed(2)}</span>
+          </div>
+          <div className="flex-shrink-0 w-36 h-24 bg-[#1c1c1e] rounded-2xl shadow-xl border border-gray-800 flex flex-col items-center justify-center p-4">
+             <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Meta Mensal</span>
+             <span className="text-white font-black text-lg">85%</span>
+          </div>
         </div>
 
         {/* Transaction History Section */}
         <section>
-          <h2 className="text-white text-xs font-bold mb-4">
-            Histórico de Transações ({transactions.length})
+          <h2 className="text-white text-[10px] font-black uppercase tracking-[0.2em] mb-4 pl-1">
+            Histórico ({transactions.length})
           </h2>
           <div className="space-y-3">
             {transactions.map((tx) => (
-              <div key={tx.id} className="bg-[#1c1c1e] p-4 rounded-2xl border border-gray-800 flex items-center justify-between">
+              <div 
+                key={tx.id} 
+                onClick={() => onEdit(tx)}
+                className="bg-[#1c1c1e] p-4 rounded-2xl border border-gray-800 flex items-center justify-between cursor-pointer active:bg-gray-800 transition-colors"
+              >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gray-800 bg-opacity-50 rounded-full flex items-center justify-center border border-gray-700">
-                    <ReportIcon name={tx.icon} size={18} className="text-gray-300" />
+                  <div className="w-10 h-10 bg-gray-800 bg-opacity-50 rounded-xl flex items-center justify-center border border-gray-700">
+                    <ReportIcon name={tx.icon} size={18} className="text-[#0a84a5]" />
                   </div>
                   <div>
-                    <p className="text-white text-sm font-semibold">{tx.description}</p>
-                    <p className="text-gray-500 text-[10px]">
+                    <p className="text-white text-sm font-bold tracking-tight">{tx.description}</p>
+                    <p className="text-gray-500 text-[9px] font-bold uppercase tracking-wider">
                       {tx.category} • {tx.date}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-red-500 font-bold text-sm">-R$ {tx.amount.toFixed(2)}</p>
+                  <p className="text-red-500 font-black text-sm tracking-tight">-R$ {tx.amount.toFixed(2)}</p>
                 </div>
               </div>
             ))}
@@ -77,25 +99,24 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions }) => {
         </section>
 
         {/* Expenses by Category Section */}
-        <section className="pb-8">
-          <h2 className="text-white text-xs font-bold mb-4">Gastos por Categoria</h2>
+        <section className="pb-10">
+          <h2 className="text-white text-[10px] font-black uppercase tracking-[0.2em] mb-4 pl-1">Gastos por Categoria</h2>
           <div className="bg-[#1c1c1e] rounded-2xl border border-gray-800 overflow-hidden">
             {Object.entries(expensesByCategory).map(([cat, amount], index, arr) => (
               <div key={cat} className={`${index !== arr.length - 1 ? 'border-b border-gray-800' : ''}`}>
-                <div className="flex items-center justify-between p-4">
+                <div className="flex items-center justify-between p-4 active:bg-gray-800 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0a84a5]"></div>
                     <ReportIcon name={catIconMap[cat] || 'Coffee'} size={16} className="text-gray-400" />
-                    <span className="text-gray-300 text-sm font-medium">{cat}</span>
+                    <span className="text-gray-300 text-xs font-bold uppercase tracking-wider">{cat}</span>
                   </div>
-                  {/* Fixed: Property 'toFixed' does not exist on type 'unknown' by casting to number */}
-                  <span className="text-red-500 text-sm font-bold">R$ {(amount as number).toFixed(2)}</span>
+                  <span className="text-red-500 text-sm font-black tracking-tight">R$ {(amount as number).toFixed(2)}</span>
                 </div>
               </div>
             ))}
             {Object.keys(expensesByCategory).length === 0 && (
-              <div className="p-4 text-center text-gray-600 text-xs italic">
-                Sem dados de categoria
+              <div className="p-8 text-center text-gray-600 text-[10px] uppercase font-bold tracking-widest italic">
+                Nenhum dado disponível
               </div>
             )}
           </div>

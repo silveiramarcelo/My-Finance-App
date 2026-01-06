@@ -18,20 +18,16 @@ const banks = [
 ];
 
 const NewAccountForm: React.FC<NewAccountFormProps> = ({ onClose, onSave }) => {
-  const [name, setName] = useState('');
   const [bank, setBank] = useState(banks[0].name);
-  const [accountNumber, setAccountNumber] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
 
   const handleSave = () => {
-    if (!name || !initialBalance) return;
+    if (!initialBalance) return;
     
     const selectedBank = banks.find(b => b.name === bank);
 
     onSave({
-      name,
       bank,
-      accountNumber,
       initialBalance: parseFloat(initialBalance),
       color: selectedBank?.color
     });
@@ -42,27 +38,16 @@ const NewAccountForm: React.FC<NewAccountFormProps> = ({ onClose, onSave }) => {
       <h1 className="text-xl font-bold text-white mb-8">Nova Conta</h1>
 
       <div className="mb-6">
-        <label className="block text-gray-300 text-sm font-medium mb-2">Apelido da Conta</label>
-        <input
-          type="text"
-          placeholder="Ex: Minha Conta Principal"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full bg-[#1c1c1e] border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#0a84a5]"
-        />
-      </div>
-
-      <div className="mb-6">
-        <label className="block text-gray-300 text-sm font-medium mb-2">Banco</label>
+        <label className="block text-gray-300 text-sm font-medium mb-3 uppercase tracking-wider">Selecione o Banco</label>
         <div className="flex flex-wrap gap-2">
           {banks.map((b) => (
             <button
               key={b.name}
               onClick={() => setBank(b.name)}
-              className={`px-4 py-2 rounded-full text-xs font-medium border transition-all ${
+              className={`px-4 py-2.5 rounded-full text-xs font-bold border transition-all ${
                 bank === b.name
-                  ? 'bg-white text-black border-white shadow-lg'
-                  : 'bg-[#1c1c1e] border-gray-800 text-gray-400'
+                  ? 'bg-white text-black border-white shadow-lg scale-105'
+                  : 'bg-[#1c1c1e] border-gray-800 text-gray-500'
               }`}
             >
               {b.name}
@@ -71,29 +56,18 @@ const NewAccountForm: React.FC<NewAccountFormProps> = ({ onClose, onSave }) => {
         </div>
       </div>
 
-      <div className="mb-6">
-        <label className="block text-gray-300 text-sm font-medium mb-2">Número da Conta</label>
-        <input
-          type="text"
-          placeholder="Ex: 12345-6"
-          value={accountNumber}
-          onChange={(e) => setAccountNumber(e.target.value)}
-          className="w-full bg-[#1c1c1e] border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#0a84a5]"
-        />
-      </div>
-
-      <div className="mb-8">
-        <label className="block text-gray-300 text-sm font-medium mb-2">Saldo Inicial (R$)</label>
+      <div className="mb-10">
+        <label className="block text-gray-300 text-sm font-medium mb-2 uppercase tracking-wider">Saldo Inicial (R$)</label>
         <input
           type="number"
           placeholder="0.00"
           value={initialBalance}
           onChange={(e) => setInitialBalance(e.target.value)}
-          className="w-full bg-[#1c1c1e] border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#0a84a5]"
+          className="w-full bg-[#1c1c1e] border border-gray-800 rounded-xl px-4 py-4 text-white text-lg placeholder-gray-600 focus:outline-none focus:border-[#0a84a5] focus:ring-1 focus:ring-[#0a84a5]"
         />
       </div>
 
-      <div className="space-y-4 pb-10">
+      <div className="space-y-4 pb-10 mt-auto">
         <button
           onClick={handleSave}
           className="w-full bg-[#0a84a5] text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-transform"

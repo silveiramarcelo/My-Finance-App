@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [showNewExpense, setShowNewExpense] = useState(false);
   const [showNewAccount, setShowNewAccount] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   
   const [transactions, setTransactions] = useState<Transaction[]>([
     {
@@ -28,9 +29,7 @@ const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([
     {
       id: 'acc-1',
-      name: 'Santander',
       bank: 'Santander',
-      accountNumber: '123',
       initialBalance: 5000.00,
       expenses: 10.00,
       currentBalance: 4990.00,
@@ -51,18 +50,41 @@ const App: React.FC = () => {
   };
 
   const handleSaveTransaction = (newTx: Omit<Transaction, 'id'>) => {
-    const tx: Transaction = {
-      ...newTx,
-      id: Math.random().toString(36).substr(2, 9)
-    };
-    setTransactions(prev => [tx, ...prev]);
-    setAccounts(prev => prev.map(acc => 
-      acc.id === tx.accountId 
-        ? { ...acc, expenses: acc.expenses + tx.amount, currentBalance: acc.currentBalance - tx.amount }
-        : acc
-    ));
+    if (editingTransaction) {
+      // Update existing
+      const oldTx = editingTransaction;
+      setTransactions(prev => prev.map(t => t.id === oldTx.id ? { ...newTx, id: oldTx.id } : t));
+      
+      // Update account balance (revert old, apply new)
+      setAccounts(prev => prev.map(acc => {
+        if (acc.id === oldTx.accountId && acc.id === newTx.accountId) {
+          // Same account, adjust by difference
+          const diff = newTx.amount - oldTx.amount;
+          return { ...acc, expenses: acc.expenses + diff, currentBalance: acc.currentBalance - diff };
+        } else if (acc.id === oldTx.accountId) {
+          // Left this account
+          return { ...acc, expenses: acc.expenses - oldTx.amount, currentBalance: acc.currentBalance + oldTx.amount };
+        } else if (acc.id === newTx.accountId) {
+          // Joined this account
+          return { ...acc, expenses: acc.expenses + newTx.amount, currentBalance: acc.currentBalance - newTx.amount };
+        }
+        return acc;
+      }));
+      setEditingTransaction(null);
+    } else {
+      // Create new
+      const tx: Transaction = {
+        ...newTx,
+        id: Math.random().toString(36).substr(2, 9)
+      };
+      setTransactions(prev => [tx, ...prev]);
+      setAccounts(prev => prev.map(acc => 
+        acc.id === tx.accountId 
+          ? { ...acc, expenses: acc.expenses + tx.amount, currentBalance: acc.currentBalance - tx.amount }
+          : acc
+      ));
+    }
     setShowNewExpense(false);
-    setActiveTab('home');
   };
 
   const handleSaveAccount = (newAcc: Omit<Account, 'id' | 'expenses' | 'currentBalance'>) => {
@@ -81,11 +103,20 @@ const App: React.FC = () => {
     setTransactions(prev => prev.filter(t => t.accountId !== id));
   };
 
+  const openEditExpense = (tx: Transaction) => {
+    setEditingTransaction(tx);
+    setShowNewExpense(true);
+  };
+
   if (showNewExpense) {
     return (
       <NewExpenseForm 
         accounts={accounts}
-        onClose={() => setShowNewExpense(false)} 
+        initialTransaction={editingTransaction || undefined}
+        onClose={() => {
+          setShowNewExpense(false);
+          setEditingTransaction(null);
+        }} 
         onSave={handleSaveTransaction} 
       />
     );
@@ -101,7 +132,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto bg-[#121212] relative overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-screen max-w-md mx-auto bg-[#121212] relative overflow-hidden shadow-2xl text-white">
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto no-scrollbar pb-24">
         {activeTab === 'home' && (
@@ -109,6 +140,7 @@ const App: React.FC = () => {
             account={accounts[0] || null} 
             transactions={transactions} 
             onDelete={handleDeleteTransaction}
+            onEdit={openEditExpense}
           />
         )}
         {activeTab === 'contas' && (
@@ -122,6 +154,7 @@ const App: React.FC = () => {
           <Reports 
             account={accounts[0] || null} 
             transactions={transactions} 
+            onEdit={openEditExpense}
           />
         )}
         {activeTab === 'settings' && (
@@ -185,7 +218,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick }) => (
     className={`flex flex-col items-center gap-1 transition-colors ${active ? 'text-[#0a84a5]' : 'text-gray-500'}`}
   >
     {icon}
-    <span className="text-xs">{label}</span>
+    <span className="text-xs font-medium">{label}</span>
   </button>
 );
 

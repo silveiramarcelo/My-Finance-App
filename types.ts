@@ -11,9 +11,7 @@ export interface Transaction {
 
 export interface Account {
   id: string;
-  name: string;
   bank: string;
-  accountNumber: string;
   initialBalance: number;
   expenses: number;
   currentBalance: number;
