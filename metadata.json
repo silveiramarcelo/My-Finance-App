@@ -1,0 +1,7 @@
+{
+  "name": "FinanceApp Clone",
+  "description": "A high-fidelity finance management dashboard with expense tracking, account summaries, and AI-powered categorization.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
