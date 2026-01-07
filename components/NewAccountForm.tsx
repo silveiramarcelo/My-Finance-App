@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Account } from '../types';
 
 interface NewAccountFormProps {
+  initialAccount?: Account;
   onClose: () => void;
   onSave: (account: Omit<Account, 'id' | 'expenses' | 'currentBalance'>) => void;
 }
@@ -17,9 +18,11 @@ const banks = [
   { name: 'Outro', color: '#3B7A9A' }
 ];
 
-const NewAccountForm: React.FC<NewAccountFormProps> = ({ onClose, onSave }) => {
-  const [bank, setBank] = useState(banks[0].name);
-  const [initialBalance, setInitialBalance] = useState('');
+const NewAccountForm: React.FC<NewAccountFormProps> = ({ initialAccount, onClose, onSave }) => {
+  const [bank, setBank] = useState(initialAccount?.bank || banks[0].name);
+  const [initialBalance, setInitialBalance] = useState(initialAccount?.initialBalance.toString() || '');
+
+  const isEditing = !!initialAccount;
 
   const handleSave = () => {
     if (!initialBalance) return;
@@ -29,13 +32,13 @@ const NewAccountForm: React.FC<NewAccountFormProps> = ({ onClose, onSave }) => {
     onSave({
       bank,
       initialBalance: parseFloat(initialBalance),
-      color: selectedBank?.color
+      color: selectedBank?.color || '#3B7A9A'
     });
   };
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-[#121212] p-6 pt-10 animate-in slide-in-from-bottom duration-300 overflow-y-auto no-scrollbar">
-      <h1 className="text-xl font-bold text-white mb-8">Nova Conta</h1>
+      <h1 className="text-xl font-bold text-white mb-8">{isEditing ? 'Editar Conta' : 'Nova Conta'}</h1>
 
       <div className="mb-6">
         <label className="block text-gray-300 text-sm font-medium mb-3 uppercase tracking-wider">Selecione o Banco</label>
@@ -72,7 +75,7 @@ const NewAccountForm: React.FC<NewAccountFormProps> = ({ onClose, onSave }) => {
           onClick={handleSave}
           className="w-full bg-[#0a84a5] text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-transform"
         >
-          Salvar Conta
+          {isEditing ? 'Atualizar Conta' : 'Salvar Conta'}
         </button>
         <button
           onClick={onClose}

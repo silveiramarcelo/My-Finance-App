@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Coffee, ShoppingBag, Utensils, Car, HeartPulse, Gamepad2, Briefcase, Package } from 'lucide-react';
+import { Coffee, ShoppingBag, Utensils, Car, HeartPulse, Gamepad2, Briefcase, Package, TrendingUp } from 'lucide-react';
 import { Account, Transaction } from '../types';
 
 interface ReportsProps {
@@ -10,11 +10,13 @@ interface ReportsProps {
 }
 
 const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
-  // Aggregate expenses by category
-  const expensesByCategory = transactions.reduce((acc, tx) => {
-    acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  // Aggregate expenses by category (Filter only expenses)
+  const expensesByCategory = transactions
+    .filter(tx => tx.type === 'expense')
+    .reduce((acc, tx) => {
+      acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
+      return acc;
+    }, {} as Record<string, number>);
 
   if (!account) {
     return (
@@ -54,16 +56,16 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
         {/* Metric Cards Row */}
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
           <div className="flex-shrink-0 w-36 h-24 bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-4">
-             <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Total Gastos</span>
-             <span className="text-black font-black text-lg">R$ {account.expenses.toFixed(2)}</span>
+             <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Total Entradas</span>
+             <span className="text-green-600 font-black text-lg">R$ {account.income.toFixed(2)}</span>
           </div>
           <div className="flex-shrink-0 w-36 h-24 bg-[#0a84a5] rounded-2xl shadow-xl flex flex-col items-center justify-center p-4">
-             <span className="text-white text-opacity-60 text-[9px] font-black uppercase tracking-widest mb-1">Saldo Livre</span>
-             <span className="text-white font-black text-lg">R$ {account.currentBalance.toFixed(2)}</span>
+             <span className="text-white text-opacity-60 text-[9px] font-black uppercase tracking-widest mb-1">Total Saídas</span>
+             <span className="text-white font-black text-lg">R$ {account.expenses.toFixed(2)}</span>
           </div>
           <div className="flex-shrink-0 w-36 h-24 bg-[#1c1c1e] rounded-2xl shadow-xl border border-gray-800 flex flex-col items-center justify-center p-4">
-             <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Meta Mensal</span>
-             <span className="text-white font-black text-lg">85%</span>
+             <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Saldo Final</span>
+             <span className="text-white font-black text-lg">R$ {account.currentBalance.toFixed(2)}</span>
           </div>
         </div>
 
@@ -80,8 +82,12 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
                 className="bg-[#1c1c1e] p-4 rounded-2xl border border-gray-800 flex items-center justify-between cursor-pointer active:bg-gray-800 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gray-800 bg-opacity-50 rounded-xl flex items-center justify-center border border-gray-700">
-                    <ReportIcon name={tx.icon} size={18} className="text-[#0a84a5]" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                     tx.type === 'income' 
+                      ? 'bg-green-500 bg-opacity-10 border-green-500 border-opacity-20 text-green-500' 
+                      : 'bg-gray-800 bg-opacity-50 border-gray-700 text-[#0a84a5]'
+                  }`}>
+                    <ReportIcon name={tx.icon} size={18} className="" />
                   </div>
                   <div>
                     <p className="text-white text-sm font-bold tracking-tight">{tx.description}</p>
@@ -91,7 +97,9 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-red-500 font-black text-sm tracking-tight">-R$ {tx.amount.toFixed(2)}</p>
+                  <p className={`${tx.type === 'income' ? 'text-green-500' : 'text-red-500'} font-black text-sm tracking-tight`}>
+                    {tx.type === 'income' ? '+' : '-'}R$ {tx.amount.toFixed(2)}
+                  </p>
                 </div>
               </div>
             ))}
@@ -145,6 +153,7 @@ const ReportIcon: React.FC<{ name: string; size?: number; className?: string }> 
     case 'Gamepad2': return <Gamepad2 size={size} className={className} />;
     case 'Briefcase': return <Briefcase size={size} className={className} />;
     case 'Package': return <Package size={size} className={className} />;
+    case 'TrendingUp': return <TrendingUp size={size} className={className} />;
     default: return <Coffee size={size} className={className} />;
   }
 };

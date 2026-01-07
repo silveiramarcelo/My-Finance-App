@@ -6,10 +6,11 @@ import { Account } from '../types';
 interface AccountsListProps {
   accounts: Account[];
   onDelete: (id: string) => void;
+  onEdit: (account: Account) => void;
   onAddNew: () => void;
 }
 
-const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onAddNew }) => {
+const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onEdit, onAddNew }) => {
   return (
     <div className="flex flex-col min-h-full bg-[#121212]">
       {/* Header */}
@@ -36,7 +37,10 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onAddNe
                 </div>
 
                 <div className="flex gap-2">
-                  <button className="px-3 py-1.5 bg-blue-500 bg-opacity-10 text-blue-400 rounded-lg text-[10px] font-bold border border-blue-500 border-opacity-20 hover:bg-opacity-20 transition-all">
+                  <button 
+                    onClick={() => onEdit(acc)}
+                    className="px-3 py-1.5 bg-blue-500 bg-opacity-10 text-blue-400 rounded-lg text-[10px] font-bold border border-blue-500 border-opacity-20 hover:bg-opacity-20 transition-all"
+                  >
                     Editar
                   </button>
                   <button 
@@ -80,9 +84,9 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onAddNe
       {/* Floating Action Button */}
       <button 
         onClick={onAddNew}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-[#0a84a5] rounded-full flex items-center justify-center shadow-2xl text-white active:scale-95 transition-transform z-50 border-2 border-[#121212]"
+        className="fixed bottom-24 right-6 w-11 h-11 bg-[#0a84a5] rounded-full flex items-center justify-center shadow-2xl text-white active:scale-95 transition-transform z-50 border-2 border-[#121212]"
       >
-        <Plus size={32} />
+        <Plus size={24} />
       </button>
     </div>
   );
