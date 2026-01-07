@@ -18,11 +18,14 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
   const totalIncome = accounts.reduce((sum, acc) => sum + acc.income, 0);
   const totalExpenses = accounts.reduce((sum, acc) => sum + acc.expenses, 0);
 
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
   return (
     <div className="flex flex-col min-h-full pb-20">
       {/* Header Section */}
       <div className="bg-[#3B7A9A] p-6 pt-10 pb-10 rounded-b-[40px] shadow-lg relative overflow-hidden">
-        {/* Subtle Background Pattern */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 -mr-20 -mt-20 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="relative z-10">
@@ -31,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
           <div className="mb-8">
             <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1 opacity-80">Saldo Total Consolidado</p>
             <p className="text-4xl font-black text-white tracking-tight">
-              R$ {totalBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {formatCurrency(totalBalance)}
             </p>
           </div>
 
@@ -44,8 +47,8 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
                 </div>
                 <span className="text-green-100 text-[10px] font-black uppercase tracking-wider opacity-70">Entradas</span>
               </div>
-              <p className="text-white font-black text-xl">
-                R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <p className="text-white font-black text-lg">
+                {formatCurrency(totalIncome)}
               </p>
             </div>
             <div className="flex-1 bg-white bg-opacity-10 rounded-2xl p-4 backdrop-blur-md border border-white border-opacity-10 shadow-sm">
@@ -55,8 +58,8 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
                 </div>
                 <span className="text-red-100 text-[10px] font-black uppercase tracking-wider opacity-70">Saídas</span>
               </div>
-              <p className="text-white font-black text-xl">
-                R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <p className="text-white font-black text-lg">
+                {formatCurrency(totalExpenses)}
               </p>
             </div>
           </div>
@@ -77,7 +80,6 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
                 key={acc.id} 
                 className="flex-shrink-0 w-44 snap-center bg-[#1c1c1e] p-4 rounded-[24px] border border-gray-800 relative overflow-hidden shadow-xl"
               >
-                {/* Visual Accent - Top Gradient based on account color */}
                 <div 
                   className="absolute top-0 left-0 right-0 h-1 opacity-80" 
                   style={{ backgroundColor: acc.color || '#3B7A9A' }}
@@ -97,15 +99,14 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
                 
                 <div className="space-y-0.5">
                   <p className="text-gray-500 text-[9px] font-black uppercase tracking-widest">Saldo</p>
-                  <p className="text-white font-black text-lg tracking-tight truncate">
-                    R$ {acc.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  <p className="text-white font-black text-sm tracking-tight truncate">
+                    {formatCurrency(acc.currentBalance)}
                   </p>
                 </div>
               </div>
             );
           })}
           
-          {/* Empty State / Add Account Shortcut */}
           {accounts.length === 0 && (
             <div className="flex-shrink-0 w-44 h-28 bg-[#1c1c1e] border-2 border-dashed border-gray-800 rounded-[24px] flex flex-col items-center justify-center p-4 text-center group cursor-pointer active:scale-95 transition-all">
               <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center mb-2 group-hover:bg-gray-700">
@@ -119,14 +120,8 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
 
       {/* Main Body - Transactions List */}
       <div className="px-6 mt-8">
-        {/* Filters Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-white text-[11px] font-black uppercase tracking-[0.2em]">Movimentações</h3>
-          <div className="flex gap-2">
-            <button className="p-1.5 bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors">
-              <ChevronRight size={16} className="rotate-90" />
-            </button>
-          </div>
         </div>
 
         {/* Filter Chips */}
@@ -169,21 +164,14 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
                 </div>
                 
                 <div className="text-right">
-                  <p className={`font-black text-base tracking-tighter ${tx.type === 'income' ? 'text-green-500' : 'text-white'}`}>
-                    {tx.type === 'income' ? '+' : '-'} R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  <p className={`font-black text-sm tracking-tighter ${tx.type === 'income' ? 'text-green-500' : 'text-white'}`}>
+                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
                   <div className="flex flex-col items-end gap-0.5 mt-0.5">
                     <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest">{tx.date}</p>
-                    {tx.dueDate && (
-                       <p className="text-orange-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
-                         <span className="w-1 h-1 rounded-full bg-orange-400"></span>
-                         Vence: {tx.dueDate}
-                       </p>
-                    )}
                   </div>
                 </div>
                 
-                {/* Swipe/Hover Delete Action */}
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();

@@ -1,22 +1,33 @@
 
-import React from 'react';
-import { Coffee, ShoppingBag, Utensils, Car, HeartPulse, Gamepad2, Briefcase, Package, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Coffee, ShoppingBag, Utensils, Car, HeartPulse, Gamepad2, Briefcase, Package, TrendingUp, Building2 } from 'lucide-react';
 import { Account, Transaction } from '../types';
 
 interface ReportsProps {
-  account: Account | null;
+  accounts: Account[];
   transactions: Transaction[];
   onEdit: (transaction: Transaction) => void;
 }
 
-const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
-  // Aggregate expenses by category (Filter only expenses)
-  const expensesByCategory = transactions
+const Reports: React.FC<ReportsProps> = ({ accounts, transactions, onEdit }) => {
+  const [selectedAccountId, setSelectedAccountId] = useState(accounts[0]?.id || '');
+  
+  const account = accounts.find(a => a.id === selectedAccountId) || accounts[0];
+
+  // Filter transactions for the selected account
+  const accountTransactions = transactions.filter(tx => tx.accountId === selectedAccountId);
+
+  // Aggregate expenses by category for the selected account
+  const expensesByCategory = accountTransactions
     .filter(tx => tx.type === 'expense')
     .reduce((acc, tx) => {
       acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
       return acc;
     }, {} as Record<string, number>);
+
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
 
   if (!account) {
     return (
@@ -34,48 +45,49 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
       </div>
 
       <div className="p-4 space-y-6">
-        {/* Account Selection */}
+        {/* Account Dynamic Selection */}
         <section>
-          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3">Selecione uma Conta</p>
-          <div className="inline-flex items-center bg-[#0a84a5] px-5 py-2.5 rounded-full text-xs font-bold text-white shadow-lg border border-[#ffffff20]">
-            {account.bank}
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3 px-1">Selecione uma Conta</p>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+            {accounts.map((acc) => (
+              <button
+                key={acc.id}
+                onClick={() => setSelectedAccountId(acc.id)}
+                className={`flex-shrink-0 px-5 py-2.5 rounded-full text-xs font-bold border transition-all ${
+                  selectedAccountId === acc.id
+                    ? 'bg-[#0a84a5] border-[#0a84a5] text-white shadow-lg scale-105'
+                    : 'bg-[#1c1c1e] border-gray-800 text-gray-500 hover:border-gray-700'
+                }`}
+              >
+                {acc.bank}
+              </button>
+            ))}
           </div>
         </section>
-
-        {/* Account Info Card */}
-        <div className="flex items-center gap-4 bg-[#1c1c1e] p-4 rounded-2xl border border-gray-800">
-           <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-700">
-              <span className="text-xl">🏛️</span>
-           </div>
-           <div>
-              <p className="text-white font-black text-sm leading-tight tracking-tight">{account.bank}</p>
-              <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-1">Status: Ativo</p>
-           </div>
-        </div>
 
         {/* Metric Cards Row */}
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
           <div className="flex-shrink-0 w-36 h-24 bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-4">
-             <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Total Entradas</span>
-             <span className="text-green-600 font-black text-lg">R$ {account.income.toFixed(2)}</span>
+             <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Entradas</span>
+             <span className="text-green-600 font-black text-sm">{formatCurrency(account.income)}</span>
           </div>
           <div className="flex-shrink-0 w-36 h-24 bg-[#0a84a5] rounded-2xl shadow-xl flex flex-col items-center justify-center p-4">
-             <span className="text-white text-opacity-60 text-[9px] font-black uppercase tracking-widest mb-1">Total Saídas</span>
-             <span className="text-white font-black text-lg">R$ {account.expenses.toFixed(2)}</span>
+             <span className="text-white text-opacity-60 text-[9px] font-black uppercase tracking-widest mb-1">Saídas</span>
+             <span className="text-white font-black text-sm">{formatCurrency(account.expenses)}</span>
           </div>
           <div className="flex-shrink-0 w-36 h-24 bg-[#1c1c1e] rounded-2xl shadow-xl border border-gray-800 flex flex-col items-center justify-center p-4">
-             <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Saldo Final</span>
-             <span className="text-white font-black text-lg">R$ {account.currentBalance.toFixed(2)}</span>
+             <span className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Saldo</span>
+             <span className="text-white font-black text-sm">{formatCurrency(account.currentBalance)}</span>
           </div>
         </div>
 
         {/* Transaction History Section */}
         <section>
           <h2 className="text-white text-[10px] font-black uppercase tracking-[0.2em] mb-4 pl-1">
-            Histórico ({transactions.length})
+            Histórico da Conta ({accountTransactions.length})
           </h2>
           <div className="space-y-3">
-            {transactions.map((tx) => (
+            {accountTransactions.map((tx) => (
               <div 
                 key={tx.id} 
                 onClick={() => onEdit(tx)}
@@ -87,7 +99,7 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
                       ? 'bg-green-500 bg-opacity-10 border-green-500 border-opacity-20 text-green-500' 
                       : 'bg-gray-800 bg-opacity-50 border-gray-700 text-[#0a84a5]'
                   }`}>
-                    <ReportIcon name={tx.icon} size={18} className="" />
+                    <ReportIcon name={tx.icon} size={18} />
                   </div>
                   <div>
                     <p className="text-white text-sm font-bold tracking-tight">{tx.description}</p>
@@ -98,11 +110,16 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
                 </div>
                 <div className="text-right">
                   <p className={`${tx.type === 'income' ? 'text-green-500' : 'text-red-500'} font-black text-sm tracking-tight`}>
-                    {tx.type === 'income' ? '+' : '-'}R$ {tx.amount.toFixed(2)}
+                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
                 </div>
               </div>
             ))}
+            {accountTransactions.length === 0 && (
+              <div className="p-8 text-center text-gray-600 text-[10px] uppercase font-bold tracking-widest italic bg-[#1c1c1e] rounded-2xl border border-dashed border-gray-800">
+                Nenhuma movimentação nesta conta
+              </div>
+            )}
           </div>
         </section>
 
@@ -118,13 +135,13 @@ const Reports: React.FC<ReportsProps> = ({ account, transactions, onEdit }) => {
                     <ReportIcon name={catIconMap[cat] || 'Coffee'} size={16} className="text-gray-400" />
                     <span className="text-gray-300 text-xs font-bold uppercase tracking-wider">{cat}</span>
                   </div>
-                  <span className="text-red-500 text-sm font-black tracking-tight">R$ {(amount as number).toFixed(2)}</span>
+                  <span className="text-red-500 text-sm font-black tracking-tight">{formatCurrency(amount as number)}</span>
                 </div>
               </div>
             ))}
             {Object.keys(expensesByCategory).length === 0 && (
               <div className="p-8 text-center text-gray-600 text-[10px] uppercase font-bold tracking-widest italic">
-                Nenhum dado disponível
+                Sem despesas categorizadas
               </div>
             )}
           </div>

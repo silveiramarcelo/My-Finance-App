@@ -11,6 +11,10 @@ interface AccountsListProps {
 }
 
 const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onEdit, onAddNew }) => {
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
   return (
     <div className="flex flex-col min-h-full bg-[#121212]">
       {/* Header */}
@@ -22,7 +26,6 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onEdit,
         <div className="space-y-4 mb-20">
           {accounts.map((acc) => (
             <div key={acc.id} className="bg-[#1c1c1e] rounded-2xl p-5 border border-gray-800 relative overflow-hidden group shadow-lg">
-              {/* Account Branding Bar */}
               <div className="absolute top-0 left-0 w-1.5 h-full transition-all group-hover:w-2" style={{ backgroundColor: acc.color || '#3B7A9A' }}></div>
               
               <div className="flex justify-between items-center mb-6">
@@ -63,7 +66,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onEdit,
                 <div className="text-right">
                   <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1">Saldo Atual</p>
                   <p className="text-white text-xl font-black tracking-tight">
-                    R$ {acc.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {formatCurrency(acc.currentBalance)}
                   </p>
                 </div>
               </div>
@@ -81,7 +84,6 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onEdit,
         </div>
       </div>
 
-      {/* Floating Action Button */}
       <button 
         onClick={onAddNew}
         className="fixed bottom-24 right-6 w-11 h-11 bg-[#0a84a5] rounded-full flex items-center justify-center shadow-2xl text-white active:scale-95 transition-transform z-50 border-2 border-[#121212]"

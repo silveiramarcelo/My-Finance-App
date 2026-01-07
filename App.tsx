@@ -19,7 +19,6 @@ const App: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   
-  // Initialize from LocalStorage or empty arrays
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem('fin_transactions');
     return saved ? JSON.parse(saved) : [];
@@ -42,7 +41,6 @@ const App: React.FC = () => {
     ];
   });
 
-  // Save to LocalStorage whenever state changes
   useEffect(() => {
     localStorage.setItem('fin_transactions', JSON.stringify(transactions));
   }, [transactions]);
@@ -168,7 +166,7 @@ const App: React.FC = () => {
         {activeTab === 'home' && <Dashboard accounts={accounts} transactions={transactions} onDelete={handleDeleteTransaction} onEdit={(tx) => { setEditingTransaction(tx); setShowNewExpense(true); }} />}
         {activeTab === 'contas' && <AccountsList accounts={accounts} onDelete={(id) => setAccounts(prev => prev.filter(a => a.id !== id))} onEdit={(acc) => { setEditingAccount(acc); setShowNewAccount(true); }} onAddNew={() => setShowNewAccount(true)} />}
         {activeTab === 'programadas' && <PlannedExpenses plannedExpenses={plannedExpenses} onConfirm={handleConfirmPlanned} onDelete={(id) => setPlannedExpenses(prev => prev.filter(p => p.id !== id))} onAddNew={() => setShowNewPlanned(true)} />}
-        {activeTab === 'relatorios' && <Reports account={accounts[0] || null} transactions={transactions} onEdit={(tx) => { setEditingTransaction(tx); setShowNewExpense(true); }} />}
+        {activeTab === 'relatorios' && <Reports accounts={accounts} transactions={transactions} onEdit={(tx) => { setEditingTransaction(tx); setShowNewExpense(true); }} />}
       </main>
 
       {activeTab === 'home' && (
