@@ -20,27 +20,34 @@ const App: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('fin_transactions');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('fin_transactions');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
   });
   
   const [plannedExpenses, setPlannedExpenses] = useState<PlannedExpense[]>(() => {
-    const saved = localStorage.getItem('fin_planned');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('fin_planned');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
   });
 
   const [accounts, setAccounts] = useState<Account[]>(() => {
-    const saved = localStorage.getItem('fin_accounts');
-    return saved ? JSON.parse(saved) : [
-      { id: 'acc-santander', bank: 'Santander', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#CC0000' },
-      { id: 'acc-nubank', bank: 'Nubank', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#8A05BE' },
-      { id: 'acc-inter', bank: 'Inter', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#FF7A00' },
-      { id: 'acc-itau', bank: 'Itaú', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#004A99' },
-      { id: 'acc-xp', bank: 'XP', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#E5FF00' },
-      { id: 'acc-c6', bank: 'C6', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#000000' }
-    ];
+    try {
+      const saved = localStorage.getItem('fin_accounts');
+      if (saved) return JSON.parse(saved);
+      
+      // Contas iniciais padrão
+      return [
+        { id: 'acc-santander', bank: 'Santander', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#CC0000' },
+        { id: 'acc-nubank', bank: 'Nubank', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#8A05BE' },
+        { id: 'acc-inter', bank: 'Inter', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#FF7A00' }
+      ];
+    } catch (e) { return []; }
   });
 
+  // Salvar sempre que houver mudanças
   useEffect(() => {
     localStorage.setItem('fin_transactions', JSON.stringify(transactions));
   }, [transactions]);
@@ -108,14 +115,21 @@ const App: React.FC = () => {
     setTransactions(prev => prev.filter(t => t.id !== id));
   };
 
-  const handleSavePlanned = (planned: Omit<PlannedExpense, 'id' | 'status'>) => {
-    const newPlanned: PlannedExpense = {
-      ...planned,
-      id: Math.random().toString(36).substr(2, 9),
-      status: 'pending'
-    };
-    setPlannedExpenses(prev => [...prev, newPlanned]);
-    setShowNewPlanned(false);
+  const handleSaveAccount = (data: Omit<Account, 'id' | 'expenses' | 'currentBalance' | 'income'>) => {
+    if (editingAccount) {
+      setAccounts(prev => prev.map(acc => acc.id === editingAccount.id ? {
+        ...acc,
+        bank: data.bank,
+        initialBalance: data.initialBalance,
+        color: data.color,
+        currentBalance: data.initialBalance + acc.income - acc.expenses
+      } : acc));
+      setEditingAccount(null);
+    } else {
+      const account: Account = { ...data, id: `acc-${Math.random().toString(36).substr(2, 9)}`, expenses: 0, income: 0, currentBalance: data.initialBalance };
+      setAccounts(prev => [...prev, account]);
+    }
+    setShowNewAccount(false);
   };
 
   const handleConfirmPlanned = (id: string) => {
@@ -139,26 +153,9 @@ const App: React.FC = () => {
     setPlannedExpenses(prev => prev.filter(p => p.id !== id));
   };
 
-  const handleSaveAccount = (data: Omit<Account, 'id' | 'expenses' | 'currentBalance' | 'income'>) => {
-    if (editingAccount) {
-      setAccounts(prev => prev.map(acc => acc.id === editingAccount.id ? {
-        ...acc,
-        bank: data.bank,
-        initialBalance: data.initialBalance,
-        color: data.color,
-        currentBalance: data.initialBalance + acc.income - acc.expenses
-      } : acc));
-      setEditingAccount(null);
-    } else {
-      const account: Account = { ...data, id: `acc-${Math.random().toString(36).substr(2, 9)}`, expenses: 0, income: 0, currentBalance: data.initialBalance };
-      setAccounts(prev => [...prev, account]);
-    }
-    setShowNewAccount(false);
-  };
-
   if (showNewExpense) return <NewExpenseForm accounts={accounts} initialTransaction={editingTransaction || undefined} onClose={() => { setShowNewExpense(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} />;
   if (showNewAccount) return <NewAccountForm initialAccount={editingAccount || undefined} onClose={() => { setShowNewAccount(false); setEditingAccount(null); }} onSave={handleSaveAccount} />;
-  if (showNewPlanned) return <NewPlannedExpenseForm accounts={accounts} onClose={() => setShowNewPlanned(false)} onSave={handleSavePlanned} />;
+  if (showNewPlanned) return <NewPlannedExpenseForm accounts={accounts} onClose={() => setShowNewPlanned(false)} onSave={(p) => setPlannedExpenses(prev => [...prev, { ...p, id: Math.random().toString(36).substr(2, 9), status: 'pending' }])} />;
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-[#121212] relative overflow-hidden shadow-2xl text-white">
