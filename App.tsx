@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Home, Wallet, BarChart3, Plus, CalendarClock } from 'lucide-react';
-import { Account, Transaction, PlannedExpense } from './types';
-import Dashboard from './components/Dashboard';
-import NewExpenseForm from './components/NewExpenseForm';
-import Reports from './components/Reports';
-import AccountsList from './components/AccountsList';
-import NewAccountForm from './components/NewAccountForm';
-import PlannedExpenses from './components/PlannedExpenses';
-import NewPlannedExpenseForm from './components/NewPlannedExpenseForm';
+import { Account, Transaction, PlannedExpense } from './types.ts';
+import Dashboard from './components/Dashboard.tsx';
+import NewExpenseForm from './components/NewExpenseForm.tsx';
+import Reports from './components/Reports.tsx';
+import AccountsList from './components/AccountsList.tsx';
+import NewAccountForm from './components/NewAccountForm.tsx';
+import PlannedExpenses from './components/PlannedExpenses.tsx';
+import NewPlannedExpenseForm from './components/NewPlannedExpenseForm.tsx';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   
+  // Carregamento inicial robusto
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem('fin_transactions');
@@ -36,9 +37,8 @@ const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>(() => {
     try {
       const saved = localStorage.getItem('fin_accounts');
-      if (saved) return JSON.parse(saved);
+      if (saved && JSON.parse(saved).length > 0) return JSON.parse(saved);
       
-      // Contas iniciais padrão
       return [
         { id: 'acc-santander', bank: 'Santander', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#CC0000' },
         { id: 'acc-nubank', bank: 'Nubank', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#8A05BE' },
@@ -47,7 +47,7 @@ const App: React.FC = () => {
     } catch (e) { return []; }
   });
 
-  // Salvar sempre que houver mudanças
+  // Efeitos de persistência
   useEffect(() => {
     localStorage.setItem('fin_transactions', JSON.stringify(transactions));
   }, [transactions]);

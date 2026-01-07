@@ -2,8 +2,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const parseExpenseWithAI = async (input: string) => {
-  // Always use a new GoogleGenAI instance with the direct process.env.API_KEY as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Fix: Access process.env.API_KEY directly as per guidelines and fix property 'process' does not exist on window error.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
   
   try {
     const response = await ai.models.generateContent({
@@ -24,8 +24,9 @@ export const parseExpenseWithAI = async (input: string) => {
       }
     });
 
-    // Access .text property directly (not as a method)
-    return JSON.parse(response.text.trim());
+    // Use the .text property directly as it is not a method.
+    const text = response.text;
+    return text ? JSON.parse(text.trim()) : null;
   } catch (error) {
     console.error("Erro ao processar com Gemini:", error);
     return null;
