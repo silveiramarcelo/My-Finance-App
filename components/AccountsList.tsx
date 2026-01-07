@@ -12,7 +12,12 @@ interface AccountsListProps {
 
 const AccountsList: React.FC<AccountsListProps> = ({ accounts, onDelete, onEdit, onAddNew }) => {
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
   };
 
   return (

@@ -25,6 +25,15 @@ const PlannedExpenses: React.FC<PlannedExpensesProps> = ({ plannedExpenses, onCo
     setSelectedYear(newYear);
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
   return (
     <div className="flex flex-col min-h-full bg-[#121212]">
       {/* Header */}
@@ -62,7 +71,7 @@ const PlannedExpenses: React.FC<PlannedExpensesProps> = ({ plannedExpenses, onCo
 
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-white font-black text-sm">R$ {p.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                <p className="text-white font-black text-sm">{formatCurrency(p.amount)}</p>
               </div>
               <div className="flex flex-col gap-1">
                 <button 

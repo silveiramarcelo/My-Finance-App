@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Coffee, ShoppingBag, Utensils, Trash2, Car, HeartPulse, Gamepad2, Briefcase, Package, TrendingUp, ArrowUpCircle, ArrowDownCircle, Building2, ChevronRight } from 'lucide-react';
+import { Coffee, ShoppingBag, Utensils, Trash2, Car, HeartPulse, Gamepad2, Briefcase, Package, TrendingUp, ArrowUpCircle, ArrowDownCircle, Building2 } from 'lucide-react';
 import { Account, Transaction, FilterPeriod } from '../types';
 
 interface DashboardProps {
@@ -19,7 +19,12 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
   const totalExpenses = accounts.reduce((sum, acc) => sum + acc.expenses, 0);
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
   };
 
   return (
@@ -106,15 +111,6 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
               </div>
             );
           })}
-          
-          {accounts.length === 0 && (
-            <div className="flex-shrink-0 w-44 h-28 bg-[#1c1c1e] border-2 border-dashed border-gray-800 rounded-[24px] flex flex-col items-center justify-center p-4 text-center group cursor-pointer active:scale-95 transition-all">
-              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center mb-2 group-hover:bg-gray-700">
-                <Building2 size={16} className="text-gray-600" />
-              </div>
-              <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest">Nova Conta</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -152,8 +148,8 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, transactions, onDelete,
                 <div className="flex items-center gap-4">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border bg-opacity-10 ${
                     tx.type === 'income' 
-                      ? 'bg-green-500 text-green-500 border-green-500 border-opacity-20 shadow-[0_0_15px_rgba(34,197,94,0.05)]' 
-                      : 'bg-[#3B7A9A] text-[#3B7A9A] border-[#3B7A9A] border-opacity-20 shadow-[0_0_15px_rgba(59,122,154,0.05)]'
+                      ? 'bg-green-500 text-green-500 border-green-500 border-opacity-20' 
+                      : 'bg-[#3B7A9A] text-[#3B7A9A] border-[#3B7A9A] border-opacity-20'
                   }`}>
                     <TransactionIcon name={tx.icon} />
                   </div>

@@ -15,7 +15,7 @@ const Reports: React.FC<ReportsProps> = ({ accounts, transactions, onEdit }) => 
   const account = accounts.find(a => a.id === selectedAccountId) || accounts[0];
 
   // Filter transactions for the selected account
-  const accountTransactions = transactions.filter(tx => tx.accountId === selectedAccountId);
+  const accountTransactions = transactions.filter(tx => tx.accountId === (account?.id || ''));
 
   // Aggregate expenses by category for the selected account
   const expensesByCategory = accountTransactions
@@ -26,7 +26,12 @@ const Reports: React.FC<ReportsProps> = ({ accounts, transactions, onEdit }) => 
     }, {} as Record<string, number>);
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
   };
 
   if (!account) {
@@ -157,6 +162,8 @@ const catIconMap: Record<string, string> = {
   'Saúde': 'HeartPulse',
   'Lazer': 'Gamepad2',
   'Trabalho': 'Briefcase',
+  'Salário': 'Briefcase',
+  'Investimentos': 'TrendingUp',
   'Outros': 'Package'
 };
 
