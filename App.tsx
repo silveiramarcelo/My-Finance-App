@@ -1,191 +1,231 @@
-
 import React, { useState, useEffect } from 'react';
-import { Home, Wallet, BarChart3, Plus, CalendarClock } from 'lucide-react';
-import { Account, Transaction, PlannedExpense } from './types.ts';
-import Dashboard from './components/Dashboard.tsx';
-import NewExpenseForm from './components/NewExpenseForm.tsx';
-import Reports from './components/Reports.tsx';
-import AccountsList from './components/AccountsList.tsx';
-import NewAccountForm from './components/NewAccountForm.tsx';
-import PlannedExpenses from './components/PlannedExpenses.tsx';
-import NewPlannedExpenseForm from './components/NewPlannedExpenseForm.tsx';
+import { Home, Wallet, BarChart3, Plus, CalendarClock, Bot, X, Cloud, CloudOff, AlertCircle } from 'lucide-react';
+import { Account, Transaction, PlannedExpense } from './types';
+import Dashboard from './components/Dashboard';
+import NewExpenseForm from './components/NewExpenseForm';
+import Reports from './components/Reports';
+import AccountsList from './components/AccountsList';
+import NewAccountForm from './components/NewAccountForm';
+import PlannedExpenses from './components/PlannedExpenses';
+import NewPlannedExpenseForm from './components/NewPlannedExpenseForm';
+import { db, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from './services/firebase';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [showNewExpense, setShowNewExpense] = useState(false);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [showNewPlanned, setShowNewPlanned] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
+  
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [plannedExpenses, setPlannedExpenses] = useState<PlannedExpense[]>([]);
   
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  
-  // Carregamento inicial robusto
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    try {
-      const saved = localStorage.getItem('fin_transactions');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-  
-  const [plannedExpenses, setPlannedExpenses] = useState<PlannedExpense[]>(() => {
-    try {
-      const saved = localStorage.getItem('fin_planned');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
 
-  const [accounts, setAccounts] = useState<Account[]>(() => {
+  useEffect(() => {
+    if (!db) {
+      setIsOnline(false);
+      setDbError("Erro de configuração do Firebase.");
+      return;
+    }
+
+    setIsSyncing(true);
+    
+    // Listeners com tratamento de erro
     try {
-      const saved = localStorage.getItem('fin_accounts');
-      if (saved && JSON.parse(saved).length > 0) return JSON.parse(saved);
+      const qTransactions = query(collection(db, "transactions"), orderBy("date", "desc"));
+      const unsubTransactions = onSnapshot(qTransactions, 
+        (snapshot) => {
+          const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Transaction));
+          setTransactions(data);
+          setIsSyncing(false);
+          setDbError(null);
+        }, 
+        (error) => {
+          console.error("Erro Firebase (Transactions):", error);
+          if (error.code === 'permission-denied') {
+            setDbError("Vá no console do Firebase > Firestore > Regras e mude para 'allow read, write: if true;'");
+          } else {
+            setDbError("Banco de dados ainda não iniciado.");
+          }
+          setIsSyncing(false);
+        }
+      );
+
+      const unsubAccounts = onSnapshot(collection(db, "accounts"), (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Account));
+        setAccounts(data);
+      });
+
+      const unsubPlanned = onSnapshot(collection(db, "planned_expenses"), (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as PlannedExpense));
+        setPlannedExpenses(data);
+      });
+
+      return () => {
+        unsubTransactions();
+        unsubAccounts();
+        unsubPlanned();
+      };
+    } catch (e) {
+      console.error("Erro ao iniciar listeners:", e);
+      setDbError("Falha na conexão.");
+      setIsSyncing(false);
+    }
+  }, []);
+
+  const handleSaveTransaction = async (newTx: Omit<Transaction, 'id'>) => {
+    if (!db) return;
+    setIsSyncing(true);
+    try {
+      if (editingTransaction) {
+        await updateDoc(doc(db, "transactions", editingTransaction.id), newTx as any);
+      } else {
+        await addDoc(collection(db, "transactions"), newTx);
+      }
       
-      return [
-        { id: 'acc-santander', bank: 'Santander', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#CC0000' },
-        { id: 'acc-nubank', bank: 'Nubank', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#8A05BE' },
-        { id: 'acc-inter', bank: 'Inter', initialBalance: 0, income: 0, expenses: 0, currentBalance: 0, color: '#FF7A00' }
-      ];
-    } catch (e) { return []; }
-  });
-
-  // Efeitos de persistência
-  useEffect(() => {
-    localStorage.setItem('fin_transactions', JSON.stringify(transactions));
-  }, [transactions]);
-
-  useEffect(() => {
-    localStorage.setItem('fin_accounts', JSON.stringify(accounts));
-  }, [accounts]);
-
-  useEffect(() => {
-    localStorage.setItem('fin_planned', JSON.stringify(plannedExpenses));
-  }, [plannedExpenses]);
-
-  const calculateBalanceUpdate = (acc: Account, amount: number, type: 'income' | 'expense', operation: 'add' | 'remove'): Account => {
-    let newIncome = acc.income;
-    let newExpenses = acc.expenses;
-    let newCurrentBalance = acc.currentBalance;
-
-    if (operation === 'add') {
-      if (type === 'income') {
-        newIncome += amount;
-        newCurrentBalance += amount;
-      } else {
-        newExpenses += amount;
-        newCurrentBalance -= amount;
+      const acc = accounts.find(a => a.id === newTx.accountId);
+      if (acc) {
+        const accountRef = doc(db, "accounts", newTx.accountId);
+        const isIncome = newTx.type === 'income';
+        await updateDoc(accountRef, {
+          income: isIncome ? (acc.income || 0) + newTx.amount : (acc.income || 0),
+          expenses: !isIncome ? (acc.expenses || 0) + newTx.amount : (acc.expenses || 0),
+          currentBalance: isIncome ? acc.currentBalance + newTx.amount : acc.currentBalance - newTx.amount
+        });
       }
-    } else {
-      if (type === 'income') {
-        newIncome -= amount;
-        newCurrentBalance -= amount;
-      } else {
-        newExpenses -= amount;
-        newCurrentBalance += amount;
-      }
-    }
-
-    return { ...acc, income: newIncome, expenses: newExpenses, currentBalance: newCurrentBalance };
-  };
-
-  const handleSaveTransaction = (newTx: Omit<Transaction, 'id'>) => {
-    if (editingTransaction) {
-      const oldTx = editingTransaction;
-      setTransactions(prev => prev.map(t => t.id === oldTx.id ? { ...newTx, id: oldTx.id } : t));
-      setAccounts(prev => prev.map(acc => {
-        let updatedAcc = acc;
-        if (acc.id === oldTx.accountId) updatedAcc = calculateBalanceUpdate(updatedAcc, oldTx.amount, oldTx.type, 'remove');
-        if (acc.id === newTx.accountId) updatedAcc = calculateBalanceUpdate(updatedAcc, newTx.amount, newTx.type, 'add');
-        return updatedAcc;
-      }));
+    } catch (e) {
+      alert("Erro ao salvar: Verifique se você ativou as 'Regras' no console do Firebase.");
+    } finally {
+      setIsSyncing(false);
+      setShowNewExpense(false);
       setEditingTransaction(null);
-    } else {
-      const tx: Transaction = { ...newTx, id: Math.random().toString(36).substr(2, 9) };
-      setTransactions(prev => [tx, ...prev]);
-      setAccounts(prev => prev.map(acc => acc.id === tx.accountId ? calculateBalanceUpdate(acc, tx.amount, tx.type, 'add') : acc));
     }
-    setShowNewExpense(false);
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    const tx = transactions.find(t => t.id === id);
-    if (tx) {
-      setAccounts(prev => prev.map(acc => 
-        acc.id === tx.accountId ? calculateBalanceUpdate(acc, tx.amount, tx.type, 'remove') : acc
-      ));
-    }
-    setTransactions(prev => prev.filter(t => t.id !== id));
-  };
+  // Se o banco estiver ok mas não houver contas, mostrar sugestão de criar conta
+  const showSetupMessage = accounts.length === 0 && !isSyncing && !dbError;
 
-  const handleSaveAccount = (data: Omit<Account, 'id' | 'expenses' | 'currentBalance' | 'income'>) => {
-    if (editingAccount) {
-      setAccounts(prev => prev.map(acc => acc.id === editingAccount.id ? {
-        ...acc,
-        bank: data.bank,
-        initialBalance: data.initialBalance,
-        color: data.color,
-        currentBalance: data.initialBalance + acc.income - acc.expenses
-      } : acc));
-      setEditingAccount(null);
-    } else {
-      const account: Account = { ...data, id: `acc-${Math.random().toString(36).substr(2, 9)}`, expenses: 0, income: 0, currentBalance: data.initialBalance };
-      setAccounts(prev => [...prev, account]);
-    }
+  if (showNewExpense) return <NewExpenseForm accounts={accounts} onClose={() => { setShowNewExpense(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} initialTransaction={editingTransaction || undefined} />;
+  if (showNewAccount) return <NewAccountForm onClose={() => setShowNewAccount(false)} onSave={async (accData) => {
+    if (db) await addDoc(collection(db, "accounts"), { ...accData, income: 0, expenses: 0, currentBalance: accData.initialBalance });
     setShowNewAccount(false);
-  };
-
-  const handleConfirmPlanned = (id: string) => {
-    const planned = plannedExpenses.find(p => p.id === id);
-    if (!planned) return;
-
-    const now = new Date();
-    const tx: Transaction = {
-      id: Math.random().toString(36).substr(2, 9),
-      description: planned.description,
-      amount: planned.amount,
-      category: planned.category,
-      date: `${now.getDate().toString().padStart(2, '0')}/${(planned.month + 1).toString().padStart(2, '0')}/${planned.year}`,
-      icon: planned.icon,
-      accountId: planned.accountId,
-      type: 'expense'
-    };
-
-    setTransactions(prev => [tx, ...prev]);
-    setAccounts(prev => prev.map(acc => acc.id === tx.accountId ? calculateBalanceUpdate(acc, tx.amount, tx.type, 'add') : acc));
-    setPlannedExpenses(prev => prev.filter(p => p.id !== id));
-  };
-
-  if (showNewExpense) return <NewExpenseForm accounts={accounts} initialTransaction={editingTransaction || undefined} onClose={() => { setShowNewExpense(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} />;
-  if (showNewAccount) return <NewAccountForm initialAccount={editingAccount || undefined} onClose={() => { setShowNewAccount(false); setEditingAccount(null); }} onSave={handleSaveAccount} />;
-  if (showNewPlanned) return <NewPlannedExpenseForm accounts={accounts} onClose={() => setShowNewPlanned(false)} onSave={(p) => setPlannedExpenses(prev => [...prev, { ...p, id: Math.random().toString(36).substr(2, 9), status: 'pending' }])} />;
+  }} />;
+  if (showNewPlanned) return <NewPlannedExpenseForm accounts={accounts} onClose={() => setShowNewPlanned(false)} onSave={async (p) => {
+    if (db) await addDoc(collection(db, "planned_expenses"), { ...p, status: 'pending' });
+    setShowNewPlanned(false);
+  }} />;
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto bg-[#121212] relative overflow-hidden shadow-2xl text-white">
-      <main className="flex-1 overflow-y-auto no-scrollbar pb-32">
-        {activeTab === 'home' && <Dashboard accounts={accounts} transactions={transactions} onDelete={handleDeleteTransaction} onEdit={(tx) => { setEditingTransaction(tx); setShowNewExpense(true); }} />}
-        {activeTab === 'contas' && <AccountsList accounts={accounts} onDelete={(id) => setAccounts(prev => prev.filter(a => a.id !== id))} onEdit={(acc) => { setEditingAccount(acc); setShowNewAccount(true); }} onAddNew={() => setShowNewAccount(true)} />}
-        {activeTab === 'programadas' && <PlannedExpenses plannedExpenses={plannedExpenses} onConfirm={handleConfirmPlanned} onDelete={(id) => setPlannedExpenses(prev => prev.filter(p => p.id !== id))} onAddNew={() => setShowNewPlanned(true)} />}
-        {activeTab === 'relatorios' && <Reports accounts={accounts} transactions={transactions} onEdit={(tx) => { setEditingTransaction(tx); setShowNewExpense(true); }} />}
-      </main>
-
-      {activeTab === 'home' && (
-        <button className="fixed bottom-28 right-6 w-12 h-12 bg-[#3B7A9A] rounded-full flex items-center justify-center shadow-lg text-white active:scale-95 transition-transform z-50 border-2 border-[#121212]" onClick={() => setShowNewExpense(true)}>
-          <Plus size={24} />
-        </button>
+    <div className="flex flex-col h-screen max-w-md mx-auto bg-[#09090b] text-slate-50 relative overflow-hidden">
+      
+      {/* DB Notification / Status */}
+      {dbError && (
+        <div className="absolute top-16 left-6 right-6 z-[70] bg-rose-500/90 backdrop-blur-md p-4 rounded-2xl flex items-start gap-3 border border-rose-400/30 shadow-2xl animate-in slide-in-from-top duration-500">
+          <AlertCircle size={20} className="mt-0.5 text-white" />
+          <div className="flex-1">
+            <p className="text-[12px] font-bold leading-snug">{dbError}</p>
+          </div>
+          <button onClick={() => setDbError(null)} className="opacity-60"><X size={16}/></button>
+        </div>
       )}
 
-      <nav className="fixed bottom-0 w-full max-w-md bg-[#1c1c1e] border-t border-gray-800 flex justify-around items-center pt-3 pb-8 z-50">
-        <NavItem icon={<Home size={22} />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+      {/* Connection Indicator */}
+      <div className="absolute top-4 right-6 z-[60] flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full backdrop-blur-lg">
+        <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-500 animate-pulse' : isOnline ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+        <span className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+          {isSyncing ? 'Sincronizando' : isOnline ? 'Banco Online' : 'Desconectado'}
+        </span>
+      </div>
+
+      <main className="flex-1 overflow-y-auto no-scrollbar pb-32">
+        <div className="animate-in fade-in duration-700">
+          {showSetupMessage && activeTab === 'home' ? (
+             <div className="p-12 text-center flex flex-col items-center justify-center min-h-[60vh]">
+                <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/20">
+                   <Wallet size={32} className="text-blue-500" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Quase lá!</h2>
+                <p className="text-slate-400 text-sm mb-8 leading-relaxed">Você ativou o banco de dados. Agora, adicione sua primeira conta para começar a gerenciar suas finanças.</p>
+                <button 
+                  onClick={() => setShowNewAccount(true)}
+                  className="bg-blue-600 px-8 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+                >
+                  Criar minha primeira conta
+                </button>
+             </div>
+          ) : (
+            <>
+              {activeTab === 'home' && (
+                <Dashboard 
+                  accounts={accounts} 
+                  transactions={transactions} 
+                  onDelete={(id) => deleteDoc(doc(db!, "transactions", id))} 
+                  onEdit={(tx) => { setEditingTransaction(tx); setShowNewExpense(true); }} 
+                />
+              )}
+              {activeTab === 'contas' && <AccountsList accounts={accounts} onAddNew={() => setShowNewAccount(true)} onDelete={(id) => deleteDoc(doc(db!, "accounts", id))} onEdit={() => {}} />}
+              {activeTab === 'agenda' && <PlannedExpenses plannedExpenses={plannedExpenses} onAddNew={() => setShowNewPlanned(true)} onConfirm={async (id) => {
+                const p = plannedExpenses.find(item => item.id === id);
+                if (!p || !db) return;
+                await handleSaveTransaction({ ...p, date: new Date().toLocaleDateString('pt-BR'), type: 'expense' });
+                await deleteDoc(doc(db, "planned_expenses", id));
+              }} onDelete={(id) => deleteDoc(doc(db!, "planned_expenses", id))} />}
+              {activeTab === 'reports' && <Reports accounts={accounts} transactions={transactions} onEdit={(tx) => { setEditingTransaction(tx); setShowNewExpense(true); }} />}
+            </>
+          )}
+        </div>
+      </main>
+
+      {/* FABs */}
+      <div className="fixed bottom-28 right-6 flex flex-col gap-3 items-end z-50">
+        <button onClick={() => setShowAIChat(true)} className="w-12 h-12 bg-indigo-600/90 rounded-2xl flex items-center justify-center shadow-lg backdrop-blur-md border border-indigo-400/30 active:scale-90 transition-all">
+          <Bot size={22} className="text-white" />
+        </button>
+        <button 
+          onClick={() => accounts.length > 0 ? setShowNewExpense(true) : setShowNewAccount(true)} 
+          className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-900/20 border border-blue-400/30 active:scale-90 transition-all"
+        >
+          <Plus size={28} className="text-white" />
+        </button>
+      </div>
+
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto glass border-t border-white/5 flex justify-around items-center pt-3 pb-10 px-4 z-50">
+        <NavItem icon={<Home size={22} />} label="Início" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
         <NavItem icon={<Wallet size={22} />} label="Contas" active={activeTab === 'contas'} onClick={() => setActiveTab('contas')} />
-        <NavItem icon={<CalendarClock size={22} />} label="Agenda" active={activeTab === 'programadas'} onClick={() => setActiveTab('programadas')} />
-        <NavItem icon={<BarChart3 size={22} />} label="Reports" active={activeTab === 'relatorios'} onClick={() => setActiveTab('relatorios')} />
+        <NavItem icon={<CalendarClock size={22} />} label="Agenda" active={activeTab === 'agenda'} onClick={() => setActiveTab('agenda')} />
+        <NavItem icon={<BarChart3 size={22} />} label="Análise" active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
       </nav>
+
+      {/* AIChat */}
+      {showAIChat && (
+        <div className="fixed inset-0 z-[100] glass animate-in fade-in zoom-in duration-300 p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold flex items-center gap-2"><Bot className="text-indigo-400" /> Analista Financeiro</h2>
+            <button onClick={() => setShowAIChat(false)} className="p-2 bg-white/5 rounded-full"><X size={20}/></button>
+          </div>
+          <div className="flex-1 bg-white/5 rounded-3xl p-6 overflow-y-auto mb-4 border border-white/10 text-sm leading-relaxed text-slate-300">
+             Olá! Com o banco de dados ativo, eu poderei analisar seus <strong>{transactions.length}</strong> lançamentos e te dar dicas personalizadas. O que deseja saber?
+          </div>
+          <div className="flex gap-2 mb-4">
+            <input placeholder="Como estão meus gastos este mês?" className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-slate-600" />
+            <button className="bg-indigo-600 px-6 py-4 rounded-2xl font-bold text-sm text-white shadow-lg shadow-indigo-600/20">Perguntar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const NavItem: React.FC<{ icon: React.ReactNode; label: string; active: boolean; onClick: () => void }> = ({ icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors px-2 ${active ? 'text-[#0a84a5]' : 'text-gray-500'}`}>
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all duration-300 relative px-2 py-1 ${active ? 'text-blue-400 scale-105' : 'text-slate-500 opacity-60 hover:opacity-100'}`}>
     {icon}
-    <span className="text-[9px] font-bold uppercase tracking-tighter">{label}</span>
+    <span className="text-[10px] font-bold uppercase tracking-[0.05em]">{label}</span>
+    {active && <div className="absolute -bottom-2 w-1.5 h-1.5 bg-blue-400 rounded-full shadow-[0_0_10px_#3b82f6]"></div>}
   </button>
 );
 

@@ -2,8 +2,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const parseExpenseWithAI = async (input: string) => {
-  // Fix: Access process.env.API_KEY directly as per guidelines and fix property 'process' does not exist on window error.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  if (!process.env.API_KEY) {
+    console.warn("API Key do Gemini não configurada.");
+    return null;
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
     const response = await ai.models.generateContent({
@@ -24,7 +28,6 @@ export const parseExpenseWithAI = async (input: string) => {
       }
     });
 
-    // Use the .text property directly as it is not a method.
     const text = response.text;
     return text ? JSON.parse(text.trim()) : null;
   } catch (error) {

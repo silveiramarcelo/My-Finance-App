@@ -1,54 +1,81 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Minhas Finanças</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Minhas Finanças Pro</title>
     
-    <!-- Configurações para iPhone (PWA) -->
+    <!-- PWA e iOS meta tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Finanças">
-    <meta name="theme-color" content="#121212">
+    <meta name="theme-color" content="#09090b">
     
-    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
+      :root { --app-bg: #09090b; }
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #121212;
-        color: white;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: var(--app-bg);
+        color: #f8fafc;
         margin: 0;
+        overflow: hidden;
         -webkit-tap-highlight-color: transparent;
-        overflow-x: hidden;
-        width: 100%;
+      }
+      #root { height: 100vh; width: 100vw; }
+      .loading-screen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--app-bg);
+        z-index: 9999;
+      }
+      .spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(59, 130, 246, 0.1);
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .glass {
+        background: rgba(18, 18, 23, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      main { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
     </style>
-    
-    <script>
-      // Evita erro de 'process is not defined' no navegador
-      window.process = { env: { API_KEY: "" } };
-    </script>
 
     <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-        "react/": "https://esm.sh/react@^19.2.3/",
-        "react": "https://esm.sh/react@^19.2.3",
-        "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
-      }
-    }
-    </script>
-</head>
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.469.0",
+    "firebase/app": "https://esm.sh/firebase@10.7.1/app",
+    "firebase/firestore": "https://esm.sh/firebase@10.7.1/firestore",
+    "@google/genai": "https://esm.sh/@google/genai@1.34.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "firebase/": "https://esm.sh/firebase@^12.7.0/"
+  }
+}
+</script>
+  </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="loading-screen">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; font-size: 13px; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Iniciando Sistema Financeiro...</p>
+      </div>
+    </div>
     <script type="module" src="index.tsx"></script>
   </body>
 </html>
